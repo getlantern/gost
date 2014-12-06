@@ -45,8 +45,7 @@ func doinit() {
 		log.Fatalf("Unable to determine current directory: %s", err)
 	}
 
-	_, err = os.Stat(".git")
-	if err == nil {
+	if exists(".git") {
 		log.Fatalf("%s already contains a .git folder, can't initialize gost", dir)
 	}
 
@@ -96,10 +95,14 @@ func fetchSubtree(pkg string, branch string, alreadyFetched map[string]bool) {
 	}
 
 	prefix := path.Join("src", pkgRoot)
-	run("git", "subtree", "add", "--squash",
-		"--prefix", prefix,
-		fmt.Sprintf("https://%s.git", pkgRoot),
-		branch)
+	if exists(prefix) {
+		log.Printf("%s already exists, declining to add as subtree", prefix)
+	} else {
+		run("git", "subtree", "add", "--squash",
+			"--prefix", prefix,
+			fmt.Sprintf("https://%s.git", pkgRoot),
+			branch)
+	}
 	alreadyFetched[pkgRoot] = true
 	fetchDeps(pkg, "master", alreadyFetched)
 }
@@ -135,12 +138,11 @@ func goGet(pkg string, alreadyFetched map[string]bool) {
 }
 
 func writeAndCommit(file string, content string, comment string) {
-	_, err := os.Stat(file)
-	if err == nil {
+	if exists(file) {
 		log.Fatalf("%s already contains %s, can't initialize gost", dir, file)
 	}
 
-	err = ioutil.WriteFile(file, []byte(content), 0644)
+	err := ioutil.WriteFile(file, []byte(content), 0644)
 	if err != nil {
 		log.Fatalf("Unable to write %s: %s", file, err)
 	}
@@ -154,6 +156,11 @@ func requireGOPATH() {
 	if GOPATH == "" {
 		log.Fatal("Please set your GOPATH")
 	}
+}
+
+func exists(file string) bool {
+	_, err := os.Stat(file)
+	return err == nil
 }
 
 func isGithub(pkg string) bool {
