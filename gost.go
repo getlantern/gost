@@ -114,7 +114,7 @@ func fetchDeps(pkg string, branch string, alreadyFetched map[string]bool) {
 	nonGithubDeps := []string{}
 	for _, dep := range deps {
 		dep = strings.TrimSpace(dep)
-		if dep == "" {
+		if dep == "" || dep == "." {
 			continue
 		}
 		if isGithub(dep) {
