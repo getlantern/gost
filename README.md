@@ -80,6 +80,12 @@ It works just like `go get -u` and updates the target package and dependencies.
 gost get -u github.com/getlantern/flashlight
 ```
 
+You can even pull in changes from a specific branch
+
+```
+gost get -u github.com/getlantern/flashlight specificbranch
+```
+
 ##### Push your gost get project and submit a PR
 
 ```
