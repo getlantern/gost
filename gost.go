@@ -64,6 +64,7 @@ func get() {
 	requireGOPATH()
 
 	flags := flag.NewFlagSet("get", flag.ExitOnError)
+	update := flags.Bool("u", false, "update existing from remote")
 	flags.Parse(os.Args[2:])
 	args := flags.Args()
 	if len(args) < 1 {
@@ -80,13 +81,13 @@ func get() {
 		branch = args[1]
 	}
 
-	fetchSubtree(pkg, branch, map[string]bool{})
+	fetchSubtree(pkg, branch, *update, map[string]bool{})
 
 	run("git", "add", "src")
 	run("git", "commit", "-m", fmt.Sprintf("[gost] Added %s and its dependencies", pkg))
 }
 
-func fetchSubtree(pkg string, branch string, alreadyFetched map[string]bool) {
+func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[string]bool) {
 	// Take only the path up to the github repo
 	pkgParts := strings.Split(pkg, "/")
 	pkgRoot := path.Join(pkgParts[:3]...)
@@ -96,7 +97,14 @@ func fetchSubtree(pkg string, branch string, alreadyFetched map[string]bool) {
 
 	prefix := path.Join("src", pkgRoot)
 	if exists(prefix) {
-		log.Printf("%s already exists, declining to add as subtree", prefix)
+		if update {
+			run("git", "subtree", "pull", "--squash",
+				"--prefix", prefix,
+				fmt.Sprintf("https://%s.git", pkgRoot),
+				branch)
+		} else {
+			log.Printf("%s already exists, declining to add as subtree", prefix)
+		}
 	} else {
 		run("git", "subtree", "add", "--squash",
 			"--prefix", prefix,
@@ -104,10 +112,10 @@ func fetchSubtree(pkg string, branch string, alreadyFetched map[string]bool) {
 			branch)
 	}
 	alreadyFetched[pkgRoot] = true
-	fetchDeps(pkg, "master", alreadyFetched)
+	fetchDeps(pkg, "master", update, alreadyFetched)
 }
 
-func fetchDeps(pkg string, branch string, alreadyFetched map[string]bool) {
+func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string]bool) {
 	depsString := run("go", "list", "-f", "{{range .Deps}}{{.}} {{end}} {{range .TestImports}}{{.}} {{end}}", pkg)
 	deps := parseDeps(depsString)
 
@@ -118,22 +126,27 @@ func fetchDeps(pkg string, branch string, alreadyFetched map[string]bool) {
 			continue
 		}
 		if isGithub(dep) {
-			fetchSubtree(dep, branch, alreadyFetched)
+			fetchSubtree(dep, branch, update, alreadyFetched)
 		} else {
 			nonGithubDeps = append(nonGithubDeps, dep)
 		}
 	}
 
 	for _, dep := range nonGithubDeps {
-		goGet(dep, alreadyFetched)
+		goGet(dep, update, alreadyFetched)
 	}
 }
 
-func goGet(pkg string, alreadyFetched map[string]bool) {
+func goGet(pkg string, update bool, alreadyFetched map[string]bool) {
 	if alreadyFetched[pkg] {
 		return
 	}
-	run("go", "get", pkg)
+	args := []string{"get"}
+	if update {
+		args = append(args, "-u")
+	}
+	args = append(args, pkg)
+	run("go", args...)
 	alreadyFetched[pkg] = true
 }
 
