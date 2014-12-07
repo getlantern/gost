@@ -45,8 +45,8 @@ export GOPATH=`pwd`
 gost get github.com/getlantern.org/flashlight
 ```
 
-At this point, you have a gost repo that incorporates flashlight and all of
-its dependencies (including test dependencies). You may want to go ahead and
+At this point, we have a gost repo that incorporates flashlight and all of
+its dependencies (including test dependencies). We may want to go ahead and
 push upstream now.
 
 ```
@@ -73,28 +73,28 @@ gost get github.com/getlantern/newneededpackage
 
 ##### Pull in upstream updates
 
-If updates have been made upstream, you can pull these in using `gost get -u`.
+If updates have been made upstream, we can pull these in using `gost get -u`.
 It works just like `go get -u` and updates the target package and dependencies.
 
 ```
 gost get -u github.com/getlantern/flashlight
 ```
 
-You can even pull in changes from a specific branch
+We can even pull in changes from a specific branch
 
 ```
 gost get -u github.com/getlantern/flashlight specificbranch
 ```
 
-##### Push your gost get project and submit a PR
+##### Push our gost get project and submit a PR
 
 ```
 git push --set-upstream origin mybranch
 ```
 
-At this point, you can submit a pull request on GitHub, which will show all
-changes to all projects in your gost repo (i.e. your GOPATH). Once the PR has
-been merged to master, you can pull using git as usual.
+At this point, we can submit a pull request on GitHub, which will show all
+changes to all projects in our gost repo (i.e. our GOPATH). Once the PR has
+been merged to master, we can pull using git as usual.
 
 ##### Contribute changes back upstream to subprojects
 
