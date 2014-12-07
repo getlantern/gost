@@ -215,4 +215,5 @@ Commands:
 
 const DefaultGitIgnore = `pkg
 bin
+.DS_Store
 `
