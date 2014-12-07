@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -82,6 +83,7 @@ func get() {
 	}
 
 	fetchSubtree(pkg, branch, *update, map[string]bool{})
+	removeGitFolders()
 
 	run("git", "add", "src")
 	run("git", "commit", "-m", fmt.Sprintf("[gost] Added %s and its dependencies", pkg))
@@ -184,6 +186,23 @@ func parseDeps(depsString string) []string {
 	depsString = strings.Replace(depsString, "[", "", -1)
 	depsString = strings.Replace(depsString, "]", "", -1)
 	return strings.Split(depsString, " ")
+}
+
+// removeGitFolders removes all .git folders under the src tree so that any git
+// repos that didn't come from GitHub (e.g. gopkg.in) won't be treated as
+// submodules.
+func removeGitFolders() {
+	filepath.Walk(path.Join(GOPATH, "src"), func(dir string, info os.FileInfo, oldErr error) error {
+		_, file := path.Split(dir)
+		if file == ".git" {
+			log.Printf("Removing git folder at %s", dir)
+			err := os.RemoveAll(dir)
+			if err != nil {
+				log.Printf("WARNING - unable to remove git folder at %s", err)
+			}
+		}
+		return nil
+	})
 }
 
 func run(prg string, args ...string) string {
