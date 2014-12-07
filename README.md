@@ -65,7 +65,7 @@ Now we make our changes.
 ##### Pull in another existing package
 
 Let's say that there's an existing package on GitHub that we need to add to our
-GOPATH in order to make this change.  We can just gost get it.
+GOPATH in order to make this change. We can just `gost get` it.
 
 ```
 gost get github.com/getlantern/newneededpackage
@@ -98,4 +98,6 @@ git pull
 gost push github.com/getlantern/flashlight
 ```
 
+Unlike `gost get` which fetches dependencies, `gost push` only pushes the
+specific package indicated in the command.
 Note - this `gost push` command is not yet implemented.
