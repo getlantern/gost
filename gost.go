@@ -143,12 +143,7 @@ func goGet(pkg string, update bool, alreadyFetched map[string]bool) {
 	if alreadyFetched[pkg] {
 		return
 	}
-	args := []string{"get"}
-	if update {
-		args = append(args, "-u")
-	}
-	args = append(args, pkg)
-	run("go", args...)
+	run("go", "get", pkg)
 	alreadyFetched[pkg] = true
 }
 
@@ -170,6 +165,9 @@ func writeAndCommit(file string, content string, comment string) {
 func requireGOPATH() {
 	if GOPATH == "" {
 		log.Fatal("Please set your GOPATH")
+	}
+	if !exists(path.Join(GOPATH, ".git")) {
+		log.Fatalf("Please make sure you've run gost init within your GOPATH (%s)", GOPATH)
 	}
 }
 
