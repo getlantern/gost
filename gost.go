@@ -13,7 +13,9 @@ import (
 )
 
 const (
+	GitDir    = ".git"
 	GitIgnore = ".gitignore"
+	GostFile  = ".gost"
 )
 
 var (
@@ -39,6 +41,7 @@ func main() {
 	}
 }
 
+// doinit does the initialization of a gost repo
 func doinit() {
 	var err error
 	dir, err = os.Getwd()
@@ -46,23 +49,27 @@ func doinit() {
 		log.Fatalf("Unable to determine current directory: %s", err)
 	}
 
-	if exists(".git") {
+	if exists(GitDir) {
 		log.Fatalf("%s already contains a .git folder, can't initialize gost", dir)
 	}
 
 	// Initialize a git repo
 	run("git", "init")
 
-	writeAndCommit(GitIgnore, DefaultGitIgnore, "Initialized repo with a .gitignore file")
+	// Write initial files
+	writeAndCommit(GitIgnore, DefaultGitIgnore)
+	writeAndCommit(GostFile, DefaultGostFile)
 
 	// Done
-	log.Printf("Initialized git repo with a default README.md, please set your GOPATH to \"%s\", e.g.", dir)
+	log.Printf("Initialized git repo, please set your GOPATH to \"%s\", e.g.", dir)
 	log.Printf("  export GOPATH=\"%s\"", dir)
 	os.Setenv("GOPATH", dir)
 }
 
+// get is like go get except that it replaces github packages with subtrees,
+// adds non-github packages to git as source.
 func get() {
-	requireGOPATH()
+	requireGostGOPATH()
 
 	flags := flag.NewFlagSet("get", flag.ExitOnError)
 	update := flags.Bool("u", false, "update existing from remote")
@@ -147,7 +154,7 @@ func goGet(pkg string, update bool, alreadyFetched map[string]bool) {
 	alreadyFetched[pkg] = true
 }
 
-func writeAndCommit(file string, content string, comment string) {
+func writeAndCommit(file string, content string) {
 	if exists(file) {
 		log.Fatalf("%s already contains %s, can't initialize gost", dir, file)
 	}
@@ -159,15 +166,22 @@ func writeAndCommit(file string, content string, comment string) {
 
 	// Write and commit
 	run("git", "add", file)
-	run("git", "commit", file, "-m", "[gost] "+comment)
+	run("git", "commit", file, "-m", "[gost] Initialized "+file)
+
+	log.Printf("Initialized and commited %s", file)
 }
 
-func requireGOPATH() {
+func requireGostGOPATH() {
 	if GOPATH == "" {
 		log.Fatal("Please set your GOPATH")
 	}
-	if !exists(path.Join(GOPATH, ".git")) {
-		log.Fatalf("Please make sure you've run gost init within your GOPATH (%s)", GOPATH)
+	requireFileInGOPATH(GostFile)
+	requireFileInGOPATH(GitDir)
+}
+
+func requireFileInGOPATH(file string) {
+	if !exists(path.Join(GOPATH, file)) {
+		log.Fatalf("Unable to find '%s' in the GOPATH '%s', please make sure you've run gost init within your GOPATH.", file, GOPATH)
 	}
 }
 
@@ -192,7 +206,7 @@ func parseDeps(depsString string) []string {
 func removeGitFolders() {
 	filepath.Walk(path.Join(GOPATH, "src"), func(dir string, info os.FileInfo, oldErr error) error {
 		_, file := path.Split(dir)
-		if file == ".git" {
+		if file == GitDir {
 			log.Printf("Removing git folder at %s", dir)
 			err := os.RemoveAll(dir)
 			if err != nil {
@@ -233,4 +247,7 @@ Commands:
 const DefaultGitIgnore = `pkg
 bin
 .DS_Store
+*.cov
 `
+
+const DefaultGostFile = `a gost lives here`
