@@ -35,8 +35,10 @@ gost init
 
 ##### Set the gost repo directory as your GOPATH
 
+gost init creates a setenv.bash that sets your GOPATH and PATH.
+
 ```
-export GOPATH=`pwd`
+source ./setenv.bash
 ```
 
 ##### Gost get the main project that we're interested in
