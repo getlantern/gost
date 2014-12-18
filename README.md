@@ -1,7 +1,7 @@
 gost
 ==========
 gost is like a vendoring `go get` that uses Git subtrees. It is useful for
-producing repeatable builds and for making coordinates changes across multiple
+producing repeatable builds and for making coordinated changes across multiple
 Go packages hosted on GitHub.
 
 When you `gost get`, any packages that are hosted on GitHub will be sucked in as
