@@ -61,8 +61,9 @@ func doinit() {
 	writeAndCommit(GostFile, DefaultGostFile)
 
 	// Done
-	log.Printf("Initialized git repo, please set your GOPATH to \"%s\", e.g.", dir)
+	log.Printf("Initialized git repo, please set your GOPATH to \"%s\" and update your PATH, e.g.", dir)
 	log.Printf("  export GOPATH=\"%s\"", dir)
+	log.Printf("  export PATH=\"$GOPATH/bin:$PATH\"")
 	os.Setenv("GOPATH", dir)
 }
 
