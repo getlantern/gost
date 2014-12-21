@@ -16,6 +16,7 @@ const (
 	GitDir    = ".git"
 	GitIgnore = ".gitignore"
 	GostFile  = ".gost"
+	SetEnv    = "setenv.bash"
 )
 
 var (
@@ -61,12 +62,11 @@ func doinit() {
 	// Write initial files
 	writeAndCommit(GitIgnore, DefaultGitIgnore)
 	writeAndCommit(GostFile, DefaultGostFile)
+	writeAndCommit(SetEnv, SetEnvFile)
 
 	// Done
-	log.Printf("Initialized git repo, please set your GOPATH to \"%s\" and update your PATH, e.g.", dir)
-	log.Printf("  export GOPATH=\"%s\"", dir)
-	log.Printf("  export PATH=\"$GOPATH/bin:$PATH\"")
-	os.Setenv("GOPATH", dir)
+	log.Print("Initialized git repo, please update your GOPATH and PATH. setenv.bash does this for you.")
+	log.Print("  source ./setenv.bash")
 }
 
 // get is like go get except that it replaces github packages with subtrees,
@@ -293,3 +293,10 @@ bin
 `
 
 const DefaultGostFile = `a gost lives here`
+
+const SetEnvFile = `#!/bin/bash
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+export GOPATH=$DIR
+export PATH=$GOPATH/bin:$PATH
+`
