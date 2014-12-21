@@ -95,10 +95,38 @@ func push() {
 	flags.Parse(os.Args[2:])
 
 	pkg, branch := pkgAndBranch(flags.Args())
-	pkgRoot := rootOf(pkg)
+	parts := strings.Split(strings.Trim(pkg, "/"), "/")
+	if len(parts) > 2 {
+		log.Printf("Pushing single package %s", pkg)
+		err := doPush(pkg, branch)
+		if err != nil {
+			log.Fatalf("Unable to push package %s: %s", pkg, err)
+		}
+	} else {
+		log.Printf("Pushing all subpackages of %s", pkg)
+		entries, err := ioutil.ReadDir(path.Join(GOPATH, "src", pkg))
+		if err != nil {
+			log.Fatalf("Unable to list subpackages of %s", pkg)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				_, dir := path.Split(entry.Name())
+				fullPkg := path.Join(pkg, dir)
+				err := doPush(fullPkg, branch)
+				if err != nil {
+					log.Printf("Unable to push package %s: %s", fullPkg, err)
+				}
+			}
+		}
+	}
+}
 
+func doPush(pkg string, branch string) error {
+	pkgRoot := rootOf(pkg)
 	srcPath := path.Join("src", pkgRoot)
-	run("git", "subtree", "push", "--prefix", srcPath, githubPath(pkgRoot), branch)
+	ghPath := githubPath(pkgRoot)
+	_, err := doRun("git", "subtree", "push", "--prefix", srcPath, ghPath, branch)
+	return err
 }
 
 func pkgAndBranch(args []string) (string, string) {

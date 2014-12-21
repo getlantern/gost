@@ -106,3 +106,10 @@ Unlike `gost get` which fetches dependencies, `gost push` only pushes the
 specific package indicated in the command.
 
 Note again that you have to specify the branch to which you want to push.
+
+You can also push to multiple repos in one go. For example, to push all
+packages in github.com/getlantern:
+
+```
+gost push github.com/getlantern
+```
