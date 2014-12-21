@@ -94,7 +94,7 @@ At this point, we can submit a pull request on GitHub, which will show all
 changes to all projects in our gost repo (i.e. our GOPATH). Once the PR has
 been merged to master, we can pull using git as usual.
 
-##### Contribute changes back upstream to subprojects
+##### Contribute changes back upstream
 
 ```
 git checkout master
@@ -107,9 +107,9 @@ specific package indicated in the command.
 
 Note again that you have to specify the branch to which you want to push.
 
-You can also push to multiple repos in one go. For example, to push all
+You can also push to multiple repos in one step. For example, to push all
 packages in github.com/getlantern:
 
 ```
-gost push github.com/getlantern
+gost push github.com/getlantern master
 ```
