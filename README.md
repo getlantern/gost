@@ -44,8 +44,10 @@ source ./setenv.bash
 ##### Gost get the main project that we're interested in
 
 ```
-gost get github.com/getlantern.org/flashlight
+gost get github.com/getlantern.org/flashlight master
 ```
+
+Note that you always have to specify the branch from which you're getting code.
 
 At this point, we have a gost repo that incorporates flashlight and all of
 its dependencies (including test dependencies). We may want to go ahead and
@@ -70,7 +72,7 @@ Let's say that there's an existing package on GitHub that we need to add to our
 GOPATH in order to make this change. We can just `gost get` it.
 
 ```
-gost get github.com/getlantern/newneededpackage
+gost get github.com/getlantern/newneededpackage master
 ```
 
 ##### Pull in upstream updates
@@ -80,12 +82,6 @@ It works just like `go get -u` and updates the target package and dependencies.
 
 ```
 gost get -u github.com/getlantern/flashlight
-```
-
-We can even pull in changes from a specific branch
-
-```
-gost get -u github.com/getlantern/flashlight specificbranch
 ```
 
 ##### Push our gost get project and submit a PR
@@ -103,16 +99,10 @@ been merged to master, we can pull using git as usual.
 ```
 git checkout master
 git pull
-gost push github.com/getlantern/flashlight
+gost push github.com/getlantern/flashlight master
 ```
 
 Unlike `gost get` which fetches dependencies, `gost push` only pushes the
 specific package indicated in the command.
 
-By default, `gost push` pushes to the branch with the same name as the current
-branch of your gost project. You can explicitly specify an upstream branch like
-this:
-
-```
-gost push github.com/getlantern/flashlight specificbranch
-```
+Note again that you have to specify the branch to which you want to push.

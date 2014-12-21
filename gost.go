@@ -77,12 +77,8 @@ func get() {
 	flags := flag.NewFlagSet("get", flag.ExitOnError)
 	update := flags.Bool("u", false, "update existing from remote")
 	flags.Parse(os.Args[2:])
-	args := flags.Args()
-	if len(args) < 1 {
-		log.Fatal("Please specify a package")
-	}
 
-	pkg, branch := pkgAndBranch(args)
+	pkg, branch := pkgAndBranch(flags.Args())
 
 	fetchSubtree(pkg, branch, *update, map[string]bool{})
 	removeGitFolders()
@@ -97,12 +93,8 @@ func push() {
 
 	flags := flag.NewFlagSet("push", flag.ExitOnError)
 	flags.Parse(os.Args[2:])
-	args := flags.Args()
-	if len(args) < 1 {
-		log.Fatal("Please specify a package")
-	}
 
-	pkg, branch := pkgAndBranch(args)
+	pkg, branch := pkgAndBranch(flags.Args())
 	pkgRoot := rootOf(pkg)
 
 	srcPath := path.Join("src", pkgRoot)
@@ -110,18 +102,17 @@ func push() {
 }
 
 func pkgAndBranch(args []string) (string, string) {
+	if len(args) < 2 {
+		log.Fatal("Please specify a package and a branch")
+	}
+
 	pkg := args[0]
 	if !isGithub(pkg) {
 		log.Fatal("gost only supports pushing packages to github.com")
 	}
 
-	branch := currentBranch()
-	if len(args) > 1 {
-		branch = args[1]
-		log.Printf("Using branch %s", branch)
-	} else {
-		log.Printf("Defaulting to branch %s", branch)
-	}
+	branch := args[1]
+	log.Printf("Using branch %s", branch)
 
 	return pkg, branch
 }
@@ -216,10 +207,6 @@ func requireFileInGOPATH(file string) {
 func exists(file string) bool {
 	_, err := os.Stat(file)
 	return err == nil
-}
-
-func currentBranch() string {
-	return strings.TrimSpace(run("git", "rev-parse", "--abbrev-ref", "HEAD"))
 }
 
 func isGithub(pkg string) bool {
