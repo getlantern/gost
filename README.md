@@ -107,4 +107,10 @@ gost push github.com/getlantern/flashlight
 Unlike `gost get` which fetches dependencies, `gost push` only pushes the
 specific package indicated in the command.
 
-Note - the `gost push` command is not yet implemented.
+By default, `gost push` pushes to the branch with the same name as the current
+branch of your gost project. You can explicitly specify an upstream branch like
+this:
+
+```
+gost push github.com/getlantern/flashlight specificbranch
+```

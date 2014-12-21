@@ -36,6 +36,8 @@ func main() {
 		doinit()
 	case "get":
 		get()
+	case "push":
+		push()
 	default:
 		failAndUsage("Unknown command: %s", cmd)
 	}
@@ -80,15 +82,7 @@ func get() {
 		log.Fatal("Please specify a package")
 	}
 
-	pkg := args[0]
-	if !isGithub(pkg) {
-		log.Fatal("gost only supports packages on github.com")
-	}
-
-	branch := "master"
-	if len(args) > 1 {
-		branch = args[1]
-	}
+	pkg, branch := pkgAndBranch(args)
 
 	fetchSubtree(pkg, branch, *update, map[string]bool{})
 	removeGitFolders()
@@ -97,10 +91,43 @@ func get() {
 	run("git", "commit", "-m", fmt.Sprintf("[gost] Added %s and its dependencies", pkg))
 }
 
+// push pushes the changes for a given repo to git
+func push() {
+	requireGostGOPATH()
+
+	flags := flag.NewFlagSet("push", flag.ExitOnError)
+	flags.Parse(os.Args[2:])
+	args := flags.Args()
+	if len(args) < 1 {
+		log.Fatal("Please specify a package")
+	}
+
+	pkg, branch := pkgAndBranch(args)
+	pkgRoot := rootOf(pkg)
+
+	srcPath := path.Join("src", pkgRoot)
+	run("git", "subtree", "push", "--prefix", srcPath, githubPath(pkgRoot), branch)
+}
+
+func pkgAndBranch(args []string) (string, string) {
+	pkg := args[0]
+	if !isGithub(pkg) {
+		log.Fatal("gost only supports pushing packages to github.com")
+	}
+
+	branch := currentBranch()
+	if len(args) > 1 {
+		branch = args[1]
+		log.Printf("Using branch %s", branch)
+	} else {
+		log.Printf("Defaulting to branch %s", branch)
+	}
+
+	return pkg, branch
+}
+
 func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[string]bool) {
-	// Take only the path up to the github repo
-	pkgParts := strings.Split(pkg, "/")
-	pkgRoot := path.Join(pkgParts[:3]...)
+	pkgRoot := rootOf(pkg)
 	if alreadyFetched[pkgRoot] {
 		return
 	}
@@ -110,7 +137,7 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 		if update {
 			run("git", "subtree", "pull", "--squash",
 				"--prefix", prefix,
-				fmt.Sprintf("https://%s.git", pkgRoot),
+				githubPath(pkgRoot),
 				branch)
 		} else {
 			log.Printf("%s already exists, declining to add as subtree", prefix)
@@ -118,7 +145,7 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 	} else {
 		run("git", "subtree", "add", "--squash",
 			"--prefix", prefix,
-			fmt.Sprintf("https://%s.git", pkgRoot),
+			githubPath(pkgRoot),
 			branch)
 	}
 	alreadyFetched[pkgRoot] = true
@@ -191,8 +218,22 @@ func exists(file string) bool {
 	return err == nil
 }
 
+func currentBranch() string {
+	return strings.TrimSpace(run("git", "rev-parse", "--abbrev-ref", "HEAD"))
+}
+
 func isGithub(pkg string) bool {
 	return strings.Index(pkg, "github.com/") == 0
+}
+
+// rootOf extracts the path up to the github repo
+func rootOf(pkg string) string {
+	pkgParts := strings.Split(pkg, "/")
+	return path.Join(pkgParts[:3]...)
+}
+
+func githubPath(pkg string) string {
+	return fmt.Sprintf("https://%s.git", pkg)
 }
 
 func parseDeps(depsString string) []string {
