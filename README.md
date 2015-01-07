@@ -44,7 +44,7 @@ source ./setenv.bash
 ##### Gost get the main project that we're interested in
 
 ```
-gost get github.com/getlantern.org/flashlight master
+gost get github.com/getlantern/flashlight master
 ```
 
 Note that you always have to specify the branch from which you're getting code.
