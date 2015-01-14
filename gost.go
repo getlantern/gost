@@ -298,6 +298,7 @@ func failAndUsage(msg string, args ...interface{}) {
 Commands:
 	init - initialize a git repo in the current directory and set GOPATH to here
 	get  - like go get, except that all github dependencies are imported as subtrees
+	push - push the named package back upstream to its source repo into the specified branch
 `)
 }
 
