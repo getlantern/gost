@@ -9,7 +9,8 @@ subrepositories and any other packages will be included in source form.
 
 Unlike most vendoring mechanisms, gost is not meant to be used within a
 subfolder of an existing repo. Rather, to use gost, set up a new project (which
-we call a "gost repo") in order to do your vendoring in there.
+we call a "gost repo") in order to do your vendoring in there. A gost repo is
+a self-contained, versioned Go workspace, with its own src, pkg and bin folders.
 
 ### Example
 
@@ -27,6 +28,8 @@ go get github.com/getlantern/gost
 
 ##### Initialize a gost repo
 
+Do this outside of your existing Go workspace(s).
+
 ```
 mkdir flashlight-build
 cd flashlight-build
@@ -35,7 +38,8 @@ gost init
 
 ##### Set the gost repo directory as your GOPATH
 
-gost init creates a setenv.bash that sets your GOPATH and PATH.
+gost init creates a setenv.bash that sets your GOPATH and PATH to point at your
+gost repo.
 
 ```
 source ./setenv.bash
