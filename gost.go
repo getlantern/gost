@@ -85,6 +85,8 @@ func get() {
 
 	run("git", "add", "src")
 	run("git", "commit", "-m", fmt.Sprintf("[gost] Added %s and its dependencies", pkg))
+
+	run("go", "install", pkg)
 }
 
 // push pushes the changes for a given repo to git
