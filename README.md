@@ -9,8 +9,11 @@ subrepositories and any other packages will be included in source form.
 
 Unlike most vendoring mechanisms, gost is not meant to be used within a
 subfolder of an existing repo. Rather, to use gost, set up a new project (which
-we call a "gost repo") in order to do your vendoring in there. A gost repo is
-a self-contained, versioned Go workspace, with its own src, pkg and bin folders.
+we call a "gost repo") in order to do your vendoring in there.
+
+A gost repo is a self-contained, versioned Go workspace, with its own src, pkg
+and bin folders. In fact, you can think of gost as nothing more than a way of
+versioning Go workspaces.
 
 ### Example
 
