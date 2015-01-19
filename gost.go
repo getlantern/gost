@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	GOPATH = os.Getenv("GOPATH")
+	GOPATH string
 
 	dir = ""
 )
@@ -221,6 +221,7 @@ func writeAndCommit(file string, content string) {
 }
 
 func requireGostGOPATH() {
+	GOPATH = os.Getenv("GOPATH")
 	if GOPATH == "" {
 		log.Fatal("Please set your GOPATH")
 	}
