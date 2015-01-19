@@ -287,6 +287,7 @@ func run(prg string, args ...string) string {
 func doRun(prg string, args ...string) (string, error) {
 	cmd := exec.Command(prg, args...)
 	log.Printf("Running %s %s", prg, strings.Join(args, " "))
+	cmd.Dir = GOPATH
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s says %s", prg, string(out))
