@@ -206,7 +206,8 @@ func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string
 }
 
 func goGet(pkg string, update bool, alreadyFetched map[string]bool) {
-	if alreadyFetched[pkg] {
+	isRelative := strings.HasPrefix(pkg, ".")
+	if alreadyFetched[pkg] || isRelative {
 		return
 	}
 	run("go", "get", pkg)
