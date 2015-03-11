@@ -94,13 +94,14 @@ func push() {
 	requireGostGOPATH()
 
 	flags := flag.NewFlagSet("push", flag.ExitOnError)
+	updateFirst := flags.Bool("u", false, "update existing from remote before pushing")
 	flags.Parse(os.Args[2:])
 
 	pkg, branch := pkgAndBranch(flags.Args())
 	parts := strings.Split(strings.Trim(pkg, "/"), "/")
 	if len(parts) > 2 {
 		log.Printf("Pushing single package %s", pkg)
-		err := doPush(pkg, branch)
+		err := doPush(pkg, branch, *updateFirst)
 		if err != nil {
 			log.Fatalf("Unable to push package %s: %s", pkg, err)
 		}
@@ -114,7 +115,7 @@ func push() {
 			if entry.IsDir() {
 				_, dir := path.Split(entry.Name())
 				fullPkg := path.Join(pkg, dir)
-				err := doPush(fullPkg, branch)
+				err := doPush(fullPkg, branch, *updateFirst)
 				if err != nil {
 					log.Printf("Unable to push package %s: %s", fullPkg, err)
 				}
@@ -123,10 +124,19 @@ func push() {
 	}
 }
 
-func doPush(pkg string, branch string) error {
+func doPush(pkg string, branch string, updateFirst bool) error {
 	pkgRoot := rootOf(pkg)
 	srcPath := path.Join("src", pkgRoot)
 	ghPath := githubPath(pkgRoot)
+	if updateFirst {
+		prefix := path.Join("src", pkgRoot)
+		log.Printf("Updating %s before pushing", pkgRoot)
+		_, err := doRun("git", "subtree", "pull", "--squash",
+			"--prefix", prefix, ghPath, branch)
+		if err != nil {
+			return err
+		}
+	}
 	_, err := doRun("git", "subtree", "push", "--prefix", srcPath, ghPath, branch)
 	return err
 }

@@ -106,13 +106,17 @@ been merged to master, we can pull using git as usual.
 ```
 git checkout master
 git pull
-gost push github.com/getlantern/flashlight master
+gost push -u github.com/getlantern/flashlight master
 ```
 
 Unlike `gost get` which fetches dependencies, `gost push` only pushes the
 specific package indicated in the command.
 
 Note again that you have to specify the branch to which you want to push.
+
+The `-u` flag tells gost to first pull from upstream before pushing. You can
+omit it if you don't want to do this, but if you have upstream changes that
+aren't in your local repo, the push will fail.
 
 You can also push to multiple repos in one step. For example, to push all
 packages in github.com/getlantern:
