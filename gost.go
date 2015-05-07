@@ -147,8 +147,8 @@ func pkgAndBranch(args []string) (string, string) {
 	}
 
 	pkg := args[0]
-	if !isGithub(pkg) {
-		log.Fatal("gost only supports pushing packages to github.com")
+	if !isGithub(pkg) && !isBitBucket(pkg) {
+		log.Fatal("gost only supports pushing packages to github.com or bitbucket.org")
 	}
 
 	branch := args[1]
@@ -193,7 +193,7 @@ func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string
 		if dep == "" || dep == "." {
 			continue
 		}
-		if isGithub(dep) {
+		if isGithub(dep) || isBitBucket(dep) {
 			fetchSubtree(dep, branch, update, alreadyFetched)
 		} else {
 			nonGithubDeps = append(nonGithubDeps, dep)
@@ -253,6 +253,10 @@ func exists(file string) bool {
 
 func isGithub(pkg string) bool {
 	return strings.Index(pkg, "github.com/") == 0
+}
+
+func isBitBucket(pkg string) bool {
+	return strings.Index(pkg, "bitbucket.org/") == 0
 }
 
 // rootOf extracts the path up to the github repo
