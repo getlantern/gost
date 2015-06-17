@@ -127,7 +127,7 @@ func push() {
 func doPush(pkg string, branch string, updateFirst bool) error {
 	pkgRoot := rootOf(pkg)
 	srcPath := path.Join("src", pkgRoot)
-	ghPath := githubPath(pkgRoot)
+	ghPath := repopath(pkgRoot)
 	if updateFirst {
 		prefix := path.Join("src", pkgRoot)
 		log.Printf("Updating %s before pushing", pkgRoot)
@@ -147,8 +147,8 @@ func pkgAndBranch(args []string) (string, string) {
 	}
 
 	pkg := args[0]
-	if !isGithub(pkg) {
-		log.Fatal("gost only supports pushing packages to github.com")
+	if !isValidRepo(pkg) {
+		log.Fatal("gost only supports pushing packages to github.com or bitbucket.org")
 	}
 
 	branch := args[1]
@@ -168,7 +168,7 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 		if update {
 			run("git", "subtree", "pull", "--squash",
 				"--prefix", prefix,
-				githubPath(pkgRoot),
+				repopath(pkgRoot),
 				branch)
 		} else {
 			log.Printf("%s already exists, declining to add as subtree", prefix)
@@ -176,7 +176,7 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 	} else {
 		run("git", "subtree", "add", "--squash",
 			"--prefix", prefix,
-			githubPath(pkgRoot),
+			repopath(pkgRoot),
 			branch)
 	}
 	alreadyFetched[pkgRoot] = true
@@ -193,7 +193,7 @@ func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string
 		if dep == "" || dep == "." {
 			continue
 		}
-		if isGithub(dep) {
+		if isValidRepo(dep) {
 			fetchSubtree(dep, branch, update, alreadyFetched)
 		} else {
 			nonGithubDeps = append(nonGithubDeps, dep)
@@ -251,8 +251,8 @@ func exists(file string) bool {
 	return err == nil
 }
 
-func isGithub(pkg string) bool {
-	return strings.Index(pkg, "github.com/") == 0
+func isValidRepo(pkg string) bool {
+	return ((strings.Index(pkg, "github.com/") == 0) || (strings.Index(pkg, "bitbucket.org/") == 0))
 }
 
 // rootOf extracts the path up to the github repo
@@ -261,7 +261,7 @@ func rootOf(pkg string) string {
 	return path.Join(pkgParts[:3]...)
 }
 
-func githubPath(pkg string) string {
+func repopath(pkg string) string {
 	return fmt.Sprintf("https://%s.git", pkg)
 }
 
