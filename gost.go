@@ -127,17 +127,17 @@ func push() {
 func doPush(pkg string, branch string, updateFirst bool) error {
 	pkgRoot := rootOf(pkg)
 	srcPath := path.Join("src", pkgRoot)
-	ghPath := repopath(pkgRoot)
+	rpath := repopath(pkgRoot)
 	if updateFirst {
 		prefix := path.Join("src", pkgRoot)
 		log.Printf("Updating %s before pushing", pkgRoot)
 		_, err := doRun("git", "subtree", "pull", "--squash",
-			"--prefix", prefix, ghPath, branch)
+			"--prefix", prefix, rpath, branch)
 		if err != nil {
 			return err
 		}
 	}
-	_, err := doRun("git", "subtree", "push", "--prefix", srcPath, ghPath, branch)
+	_, err := doRun("git", "subtree", "push", "--prefix", srcPath, rpath, branch)
 	return err
 }
 
@@ -147,7 +147,7 @@ func pkgAndBranch(args []string) (string, string) {
 	}
 
 	pkg := args[0]
-	if !isValidRepo(pkg) {
+	if !supportsSubtrees(pkg) {
 		log.Fatal("gost only supports pushing packages to github.com or bitbucket.org")
 	}
 
@@ -193,7 +193,7 @@ func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string
 		if dep == "" || dep == "." {
 			continue
 		}
-		if isValidRepo(dep) {
+		if supportsSubtrees(dep) {
 			fetchSubtree(dep, branch, update, alreadyFetched)
 		} else {
 			nonGithubDeps = append(nonGithubDeps, dep)
@@ -251,8 +251,8 @@ func exists(file string) bool {
 	return err == nil
 }
 
-func isValidRepo(pkg string) bool {
-	return ((strings.Index(pkg, "github.com/") == 0) || (strings.Index(pkg, "bitbucket.org/") == 0))
+func supportsSubtrees(pkg string) bool {
+	return isGitHub(pkg) || isBitBucket(pkg)
 }
 
 // rootOf extracts the path up to the github repo
@@ -262,7 +262,18 @@ func rootOf(pkg string) string {
 }
 
 func repopath(pkg string) string {
+	if isBitBucket(pkg) {
+		return fmt.Sprintf("git@bitbucket.org:%s.git", pkg[14:])
+	}
 	return fmt.Sprintf("https://%s.git", pkg)
+}
+
+func isGitHub(pkg string) bool {
+	return strings.Index(pkg, "github.com/") == 0
+}
+
+func isBitBucket(pkg string) bool {
+	return strings.Index(pkg, "bitbucket.org/") == 0
 }
 
 func parseDeps(depsString string) []string {
