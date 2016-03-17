@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,7 +24,8 @@ const (
 var (
 	GOPATH string
 
-	dir = ""
+	dir     = ""
+	verbose *bool
 )
 
 func main() {
@@ -76,6 +79,7 @@ func get() {
 
 	flags := flag.NewFlagSet("get", flag.ExitOnError)
 	update := flags.Bool("u", false, "update existing from remote")
+	verbose = flags.Bool("v", false, "verbose")
 	flags.Parse(os.Args[2:])
 
 	pkg, branch := pkgAndBranch(flags.Args())
@@ -95,13 +99,15 @@ func push() {
 
 	flags := flag.NewFlagSet("push", flag.ExitOnError)
 	updateFirst := flags.Bool("u", false, "update existing from remote before pushing")
+	force := flags.Bool("f", false, "if true, will force push to remote")
+	verbose = flags.Bool("v", false, "verbose")
 	flags.Parse(os.Args[2:])
 
 	pkg, branch := pkgAndBranch(flags.Args())
 	parts := strings.Split(strings.Trim(pkg, "/"), "/")
 	if len(parts) > 2 {
 		log.Printf("Pushing single package %s", pkg)
-		err := doPush(pkg, branch, *updateFirst)
+		err := doPush(pkg, branch, *updateFirst, *force)
 		if err != nil {
 			log.Fatalf("Unable to push package %s: %s", pkg, err)
 		}
@@ -115,7 +121,7 @@ func push() {
 			if entry.IsDir() {
 				_, dir := path.Split(entry.Name())
 				fullPkg := path.Join(pkg, dir)
-				err := doPush(fullPkg, branch, *updateFirst)
+				err := doPush(fullPkg, branch, *updateFirst, *force)
 				if err != nil {
 					log.Printf("Unable to push package %s: %s", fullPkg, err)
 				}
@@ -124,7 +130,7 @@ func push() {
 	}
 }
 
-func doPush(pkg string, branch string, updateFirst bool) error {
+func doPush(pkg string, branch string, updateFirst bool, force bool) error {
 	pkgRoot := rootOf(pkg)
 	srcPath := path.Join("src", pkgRoot)
 	ghPath := githubPath(pkgRoot)
@@ -137,8 +143,19 @@ func doPush(pkg string, branch string, updateFirst bool) error {
 			return err
 		}
 	}
-	_, err := doRun("git", "subtree", "push", "--prefix", srcPath, ghPath, branch)
-	return err
+	if force {
+		// See http://stackoverflow.com/questions/33172857/how-do-i-force-a-subtree-push-to-overwrite-remote-changes
+		// First resplit subtree
+		commitHash, err := doRun("git", "subtree", "split", "--prefix", srcPath, branch)
+		if err != nil {
+			return err
+		}
+		_, err = doRun("git", "push", ghPath, strings.Replace(commitHash, "\n", "", -1)+":"+branch, "--force")
+		return err
+	} else {
+		_, err := doRun("git", "subtree", "push", "--prefix", srcPath, ghPath, branch)
+		return err
+	}
 }
 
 func pkgAndBranch(args []string) (string, string) {
@@ -300,11 +317,19 @@ func doRun(prg string, args ...string) (string, error) {
 	cmd := exec.Command(prg, args...)
 	log.Printf("Running %s %s", prg, strings.Join(args, " "))
 	cmd.Dir = GOPATH
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("%s says %s", prg, string(out))
+	b := new(bytes.Buffer)
+	if *verbose {
+		cmd.Stdout = io.MultiWriter(os.Stdout, b)
+		cmd.Stderr = os.Stderr
+	} else {
+		cmd.Stdout = b
 	}
-	return string(out), nil
+	err := cmd.Run()
+	out := string(b.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("%s says %s", prg, out)
+	}
+	return out, nil
 }
 
 func failAndUsage(msg string, args ...interface{}) {
