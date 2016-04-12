@@ -133,12 +133,12 @@ func push() {
 func doPush(pkg string, branch string, updateFirst bool, force bool) error {
 	pkgRoot := rootOf(pkg)
 	srcPath := path.Join("src", pkgRoot)
-	ghPath := githubPath(pkgRoot)
+	rpath := repopath(pkgRoot)
 	if updateFirst {
 		prefix := path.Join("src", pkgRoot)
 		log.Printf("Updating %s before pushing", pkgRoot)
 		_, err := doRun("git", "subtree", "pull", "--squash",
-			"--prefix", prefix, ghPath, branch)
+			"--prefix", prefix, rpath, branch)
 		if err != nil {
 			return err
 		}
@@ -150,10 +150,10 @@ func doPush(pkg string, branch string, updateFirst bool, force bool) error {
 		if err != nil {
 			return err
 		}
-		_, err = doRun("git", "push", ghPath, strings.Replace(commitHash, "\n", "", -1)+":"+branch, "--force")
+		_, err = doRun("git", "push", rpath, strings.Replace(commitHash, "\n", "", -1)+":"+branch, "--force")
 		return err
 	} else {
-		_, err := doRun("git", "subtree", "push", "--prefix", srcPath, ghPath, branch)
+		_, err := doRun("git", "subtree", "push", "--prefix", srcPath, rpath, branch)
 		return err
 	}
 }
@@ -164,8 +164,8 @@ func pkgAndBranch(args []string) (string, string) {
 	}
 
 	pkg := args[0]
-	if !isGithub(pkg) {
-		log.Fatal("gost only supports pushing packages to github.com")
+	if !supportsSubtrees(pkg) {
+		log.Fatal("gost only supports pushing packages to github.com or bitbucket.org")
 	}
 
 	branch := args[1]
@@ -185,7 +185,7 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 		if update {
 			run("git", "subtree", "pull", "--squash",
 				"--prefix", prefix,
-				githubPath(pkgRoot),
+				repopath(pkgRoot),
 				branch)
 		} else {
 			log.Printf("%s already exists, declining to add as subtree", prefix)
@@ -193,7 +193,7 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 	} else {
 		run("git", "subtree", "add", "--squash",
 			"--prefix", prefix,
-			githubPath(pkgRoot),
+			repopath(pkgRoot),
 			branch)
 	}
 	alreadyFetched[pkgRoot] = true
@@ -210,7 +210,7 @@ func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string
 		if dep == "" || dep == "." {
 			continue
 		}
-		if isGithub(dep) {
+		if supportsSubtrees(dep) {
 			fetchSubtree(dep, branch, update, alreadyFetched)
 		} else {
 			nonGithubDeps = append(nonGithubDeps, dep)
@@ -268,8 +268,8 @@ func exists(file string) bool {
 	return err == nil
 }
 
-func isGithub(pkg string) bool {
-	return strings.Index(pkg, "github.com/") == 0
+func supportsSubtrees(pkg string) bool {
+	return isGitHub(pkg) || isBitBucket(pkg)
 }
 
 // rootOf extracts the path up to the github repo
@@ -278,8 +278,19 @@ func rootOf(pkg string) string {
 	return path.Join(pkgParts[:3]...)
 }
 
-func githubPath(pkg string) string {
+func repopath(pkg string) string {
+	if isBitBucket(pkg) {
+		return fmt.Sprintf("git@bitbucket.org:%s.git", pkg[14:])
+	}
 	return fmt.Sprintf("https://%s.git", pkg)
+}
+
+func isGitHub(pkg string) bool {
+	return strings.Index(pkg, "github.com/") == 0
+}
+
+func isBitBucket(pkg string) bool {
+	return strings.Index(pkg, "bitbucket.org/") == 0
 }
 
 func parseDeps(depsString string) []string {
@@ -320,9 +331,10 @@ func doRun(prg string, args ...string) (string, error) {
 	b := new(bytes.Buffer)
 	if *verbose {
 		cmd.Stdout = io.MultiWriter(os.Stdout, b)
-		cmd.Stderr = os.Stderr
+		cmd.Stderr = io.MultiWriter(os.Stderr, b)
 	} else {
 		cmd.Stdout = b
+		cmd.Stderr = b
 	}
 	err := cmd.Run()
 	out := string(b.Bytes())
