@@ -120,6 +120,13 @@ The `-u` flag tells gost to first pull from upstream before pushing. You can
 omit it if you don't want to do this, but if you have upstream changes that
 aren't in your local repo, the push will fail.
 
+The `-f` flag can be used to force push upstream even if it's diverged from
+your vendored changes.
+
+```
+gost push -f github.com/getlantern/flashlight master
+```
+
 You can also push to multiple repos in one step. For example, to push all
 packages in github.com/getlantern:
 
