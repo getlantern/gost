@@ -93,6 +93,13 @@ It works just like `go get -u` and updates the target package and dependencies.
 gost get -u github.com/getlantern/flashlight
 ```
 
+If you want to update only the named package and leave depedencies as-is, use
+the `up` flag.
+
+```
+gost get -up github.com/getlantern/flashlight
+```
+
 ##### Push our gost get project and submit a PR
 
 ```

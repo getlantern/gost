@@ -76,12 +76,15 @@ func get() {
 	requireCleanWorkingDirectory()
 
 	flags := flag.NewFlagSet("get", flag.ExitOnError)
-	update := flags.Bool("u", false, "update existing from remote")
+	update := flags.Bool("u", false, "update existing from remote, including recusively updating dependencies")
+	updatePackage := flags.Bool("up", false, "update only the named package, fetch missing dependencies but leave existing dependencies alone")
 	flags.Parse(os.Args[2:])
 
 	pkg, branch := pkgAndBranch(flags.Args())
 
-	fetchSubtree(pkg, branch, *update, map[string]bool{})
+	shouldUpdate := *update || *updatePackage
+	shouldUpdateDeps := *update
+	fetchSubtree(pkg, branch, shouldUpdate, shouldUpdateDeps, map[string]bool{})
 	removeGitFolders()
 
 	run("git", "add", "src")
@@ -158,7 +161,7 @@ func pkgAndBranch(args []string) (string, string) {
 	return pkg, branch
 }
 
-func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[string]bool) {
+func fetchSubtree(pkg string, branch string, update bool, updateDeps bool, alreadyFetched map[string]bool) {
 	pkgRoot := rootOf(pkg)
 	if alreadyFetched[pkgRoot] {
 		return
@@ -181,10 +184,10 @@ func fetchSubtree(pkg string, branch string, update bool, alreadyFetched map[str
 			branch)
 	}
 	alreadyFetched[pkgRoot] = true
-	fetchDeps(pkg, "master", update, alreadyFetched)
+	fetchDeps(pkg, "master", updateDeps, alreadyFetched)
 }
 
-func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string]bool) {
+func fetchDeps(pkg string, branch string, updateDeps bool, alreadyFetched map[string]bool) {
 	depsString := run("go", "list", "-f", "{{range .Deps}}{{.}} {{end}} {{range .TestImports}}{{.}} {{end}}", pkg)
 	deps := parseDeps(depsString)
 
@@ -195,14 +198,14 @@ func fetchDeps(pkg string, branch string, update bool, alreadyFetched map[string
 			continue
 		}
 		if supportsSubtrees(dep) {
-			fetchSubtree(dep, branch, update, alreadyFetched)
+			fetchSubtree(dep, branch, updateDeps, updateDeps, alreadyFetched)
 		} else {
 			nonGithubDeps = append(nonGithubDeps, dep)
 		}
 	}
 
 	for _, dep := range nonGithubDeps {
-		goGet(dep, update, alreadyFetched)
+		goGet(dep, updateDeps, alreadyFetched)
 	}
 }
 
