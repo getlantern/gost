@@ -73,6 +73,7 @@ func doinit() {
 // adds non-github packages to git as source.
 func get() {
 	requireGostGOPATH()
+	requireCleanWorkingDirectory()
 
 	flags := flag.NewFlagSet("get", flag.ExitOnError)
 	update := flags.Bool("u", false, "update existing from remote")
@@ -238,6 +239,13 @@ func requireGostGOPATH() {
 	}
 	requireFileInGOPATH(GostFile)
 	requireFileInGOPATH(GitDir)
+}
+
+func requireCleanWorkingDirectory() {
+	status := run("git", "status", "--porcelain")
+	if status != "" {
+		log.Fatal("Working tree dirty or untracked files present. Please clean up before running gost get.")
+	}
 }
 
 func requireFileInGOPATH(file string) {
